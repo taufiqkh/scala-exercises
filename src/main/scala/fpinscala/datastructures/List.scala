@@ -77,6 +77,12 @@ object List {
 
   def inc(ints: List[Int]): List[Int] = foldRight(ints, Nil:List[Int])((a, b) => Cons(a + 1, b))
 
+  def filterFold[A](as: List[A])(f: A => Boolean): List[A] =
+    foldRight(as, Nil:List[A])((a, z) => if (f(a)) Cons(a, z) else z)
+
+  def filter[A](as: List[A])(f: A => Boolean): List[A] =
+    flatMap(as)((a) => if (f(a)) Nil else Cons(a, Nil))
+
   def stringify(ds: List[Double]): List[String] =
     foldRight(ds, Nil:List[String])((d, z) => Cons(d.toString, z))
 
@@ -88,5 +94,35 @@ object List {
   def map[A,B](as: List[A])(f: A => B): List[B] =
     foldRight(as, Nil:List[B])((a, b) => Cons(f(a), b))
 
+  def flatMap[A,B](as: List[A])(f: A => List[B]): List[B] = flatten(map(as)(f))
+
+  def addLists(a1: List[Int], a2: List[Int]): List[Int] = zipWith(a1, a2)(_ + _)
+
+  @tailrec
+  private def zipWith[A, B](a1: List[A], a2: List[A], acc: List[B])(f: (A, A) => B):  List[B] =
+    (a1, a2) match {
+      case (Cons(x, xs), Cons(y, ys)) =>
+        zipWith(xs, ys, Cons(f(x, y), acc))(f)
+    case (Nil, Nil) => acc
+    case _ => throw new IllegalArgumentException("Lists must be same length")
+  }
+
+  def zipWith[A, B](a1: List[A], a2: List[A])(f: (A, A) => B): List[B] =
+    reverse(zipWith(a1, a2, Nil)(f))
+
   def setHead[A](head: A, list: List[A]): List[A] = Cons(head, list)
+
+  def matchSub[A](sup: List[A], sub: List[A]): Boolean = sub match {
+    case Nil => true
+    case Cons(subHead, subTail) => sup match {
+      case Nil => false
+      case Cons(supHead, supTail) => if (subHead == supHead) matchSub(supTail, subTail) else false
+    }
+  }
+  def hasSubsequence[A](sup: List[A], sub: List[A]): Boolean = sup match {
+    case Nil => sub == Nil
+    case Cons(x, xs) =>
+      if (matchSub(sup, sub)) true
+      else hasSubsequence(xs, sub)
+  }
 }
