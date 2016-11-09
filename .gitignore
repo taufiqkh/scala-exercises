@@ -1,0 +1,9 @@
+# Intellij IDEA
+.idea/
+*.iml
+
+# Vim
+*.*~
+
+# Scala
+target/
