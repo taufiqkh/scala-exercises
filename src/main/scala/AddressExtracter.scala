@@ -27,4 +27,11 @@ object AddressExtracter {
 
     gunzip(new StringBuilder(reversed.length)).toString()
   }
+
+  def extractMessage(message: String): String = {
+    val grouped = Base64.getDecoder.decode(message).map(x => if (x == 48) 0 else 1).grouped(8)
+    grouped.map(arr => arr.reduceLeft((z, a) => (z << 1) + a).toChar)
+      .foldLeft(new StringBuilder)((b, a) => b.append(a))
+      .toString
+  }
 }
