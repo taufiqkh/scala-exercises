@@ -3,38 +3,53 @@ package fpinscala.strictness
 /**
   * Created by Taufiq on 25/11/2016.
   */
+import Stream._
+
+import scala.annotation.tailrec
 sealed trait Stream[+A] {
   def headOption: Option[A] = this match {
-    case Empty => None
     case Cons(h, t) => Some(h())
+    case _ => None
   }
 
   def toList: List[A] = this match {
-    case Empty => List()
     case Cons(h, t) => h() :: t().toList
+    case _ => List()
   }
 
   def take(n: Int): Stream[A] = {
-    if (n == 0) Empty
-    else this match {
-      case Cons(h, t) => Cons(h, () => t().take(n - 1))
-      case Empty => Empty
-    }
+    case Cons(h, t) if n > 1 => cons(h(), t().take(n - 1))
+    case Cons(h, _) if n == 1 => cons(h(), empty)
+    case _ => Empty
   }
 
-  def drop(n: Int): Stream[A] = {
-    if (n == 0) this
-    else this match {
-      case Empty => Empty
-      case Cons(h, t) => t().drop(n - 1)
-    }
+  @tailrec
+  final def drop(n: Int): Stream[A] = this match {
+    case Cons(_, t) if n > 0 => t().drop(n - 1)
+    case _ => Empty
   }
 
   def takeWhile(f: A => Boolean): Stream[A] = this match {
-    case Empty => Empty
     case Cons(h, t) =>
       if (f(h())) Cons(h, () => t().takeWhile(f))
       else Empty
+    case _ => Empty
+  }
+
+  def exists(p: A => Boolean): Boolean = this match {
+    case Cons(h, t) => p(h()) || t().exists(p)
+    case _ => false
+  }
+
+  def foldRight[B](z: => B)(f: (A, => B) => B): B = this match {
+    case Cons(h, t) => f(h(), t().foldRight(z)(f))
+    case _ => z
+  }
+
+  @tailrec
+  final def foldLeft[B](z: => B)(f: (A, => B) => B): B = this match {
+    case Cons(h, t) => t().foldLeft(f(h(), z))(f)
+    case _ => z
   }
 }
 case object Empty extends Stream[Nothing]
