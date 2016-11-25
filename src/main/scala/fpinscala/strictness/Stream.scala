@@ -17,7 +17,7 @@ sealed trait Stream[+A] {
     case _ => List()
   }
 
-  def take(n: Int): Stream[A] = {
+  def take(n: Int): Stream[A] = this match {
     case Cons(h, t) if n > 1 => cons(h(), t().take(n - 1))
     case Cons(h, _) if n == 1 => cons(h(), empty)
     case _ => Empty
@@ -29,9 +29,12 @@ sealed trait Stream[+A] {
     case _ => Empty
   }
 
-  def takeWhile(f: A => Boolean): Stream[A] = this match {
+  def takeWhile(f: A => Boolean): Stream[A] =
+    foldRight(empty[A])((h, t) => if (f(h)) cons(h, t) else empty)
+
+  def takeWhile2(f: A => Boolean): Stream[A] = this match {
     case Cons(h, t) =>
-      if (f(h())) Cons(h, () => t().takeWhile(f))
+      if (f(h())) Cons(h, () => t().takeWhile2(f))
       else Empty
     case _ => Empty
   }
@@ -45,6 +48,8 @@ sealed trait Stream[+A] {
     case Cons(h, t) => f(h(), t().foldRight(z)(f))
     case _ => z
   }
+
+  def forAll(p: A => Boolean): Boolean = foldRight(true)((a, b) => p(a) && b)
 
   @tailrec
   final def foldLeft[B](z: => B)(f: (A, => B) => B): B = this match {
