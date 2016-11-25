@@ -7,7 +7,9 @@ import Stream._
 
 import scala.annotation.tailrec
 sealed trait Stream[+A] {
-  def headOption: Option[A] = this match {
+  def headOption: Option[A] = foldRight(None: Option[A])((a, b) => Some(a))
+
+  def headOption2: Option[A] = this match {
     case Cons(h, t) => Some(h())
     case _ => None
   }
@@ -49,7 +51,17 @@ sealed trait Stream[+A] {
     case _ => z
   }
 
+  def map[B](f: A => B): Stream[B] = foldRight(empty[B])((h, t) => cons(f(h), t))
+
+  def filter(f: A => Boolean): Stream[A] =
+    foldRight(empty[A])((h, t) => if (f(h)) cons(h, t) else t)
+
+  def append[B >: A](s: => Stream[B]): Stream[B] = foldRight(s)((h, t) => cons(h, t))
+
   def forAll(p: A => Boolean): Boolean = foldRight(true)((a, b) => p(a) && b)
+
+  def flatMap[B >: A](f: A => Stream[B]): Stream[B] =
+    foldRight(empty[B])((a, b) => b.append(f(a)))
 
   @tailrec
   final def foldLeft[B](z: => B)(f: (A, => B) => B): B = this match {
@@ -71,5 +83,23 @@ object Stream {
 
   def apply[A](as: A*): Stream[A] = {
     if (as.isEmpty) Empty else cons(as.head, apply(as.tail: _*))
+  }
+
+  def constant[A](a: A): Stream[A] = cons(a, constant(a))
+
+  val ones: Stream[Int] = constant(1)
+
+  def from(n: Int): Stream[Int] = cons(n, from(n + 1))
+
+  val fibs: Stream[Int] = {
+    def fibs(f0: Int, f1: Int): Stream[Int] = {
+      cons(f0, fibs(f1, f0 + f1))
+    }
+    fibs(0, 1)
+  }
+
+  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = f(z) match {
+    case None => Empty
+    case Some((a, s)) => cons(a, unfold(s)(f))
   }
 }
