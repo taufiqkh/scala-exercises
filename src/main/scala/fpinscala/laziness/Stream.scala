@@ -1,4 +1,4 @@
-package fpinscala.strictness
+package fpinscala.laziness
 
 /**
   * Created by Taufiq on 25/11/2016.
